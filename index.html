@@ -1,0 +1,1364 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="키 하나 누르고 말하면 커서 자리에 글이 써지는 무료 받아쓰기 앱. Claude에게 안내문을 붙여넣으면 내 컴퓨터에 맞게 만들어 줘요.">
+<meta property="og:title" content="WhisperFlow — 내 컴퓨터에서 도는 받아쓰기 앱">
+<meta property="og:description" content="키 하나 누르고 말하면 커서 자리에 글이 써지는 무료 받아쓰기 앱. Claude에게 안내문을 붙여넣으면 내 컴퓨터에 맞게 만들어 줘요.">
+<meta property="og:image" content="icon.png">
+<link rel="icon" href="icon.png">
+<title>WhisperFlow 따라 만들기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  /* Steady 일기 페이지와 같은 색·글꼴 체계 */
+  :root {
+    --bg-top: #EEE8FF; --bg-mid: #E8F0FF; --bg-bottom: #E3F4FA;
+    --ink: #1B1B24; --muted: #5C5A6E; --line: #D9D5EC;
+    --card: rgba(255,255,255,.72); --card-solid: #FFFFFF;
+    --accent: #5A55C8; --accent-ink: #FFFFFF; --accent-soft: #E3E0FF;
+    --code: #F7F6FD; --link: #5A55C8; --warn: #A1453B;
+    --good: #1F7A52; --good-bg: #DDF3E8; --mid: #8A5A00; --mid-bg: #FBEFD6; --bad: #A1453B; --bad-bg: #F8E3E0;
+    --pill: #1C1C1F; --pill-ink: #F2F2F2; --rec: #FF5A5F;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-top: #1B1B3A; --bg-mid: #22203F; --bg-bottom: #2A2140;
+      --ink: #E9E7F7; --muted: #B4B1C9; --line: #3E3B5C;
+      --card: rgba(255,255,255,.06); --card-solid: #24223F;
+      --accent: #C3C0FF; --accent-ink: #1E1A5C; --accent-soft: #34306F;
+      --code: #1E1C38; --link: #C3C0FF; --warn: #F2A79C;
+      --good: #7DDBAE; --good-bg: #1D3A31; --mid: #F2C46B; --mid-bg: #3A3020; --bad: #F2A79C; --bad-bg: #3D2530;
+      --pill: #0E0D18;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg-top: #1B1B3A; --bg-mid: #22203F; --bg-bottom: #2A2140;
+    --ink: #E9E7F7; --muted: #B4B1C9; --line: #3E3B5C;
+    --card: rgba(255,255,255,.06); --card-solid: #24223F;
+    --accent: #C3C0FF; --accent-ink: #1E1A5C; --accent-soft: #34306F;
+    --code: #1E1C38; --link: #C3C0FF; --warn: #F2A79C;
+    --good: #7DDBAE; --good-bg: #1D3A31; --mid: #F2C46B; --mid-bg: #3A3020; --bad: #F2A79C; --bad-bg: #3D2530;
+    --pill: #0E0D18;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; color: var(--ink); line-height: 1.7; min-height: 100vh;
+    font-family: "Noto Sans KR", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, var(--bg-top), var(--bg-mid) 45%, var(--bg-bottom)) fixed;
+    background-color: var(--bg-mid);
+  }
+  a { color: var(--link); }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px; }
+
+  header.hero { padding-block: 72px 40px; text-align: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line); font-size: .85rem; color: var(--muted);
+  }
+  .badge img { width: 18px; height: 18px; }
+  h1 {
+    font-family: "Gowun Dodum", "Noto Sans KR", sans-serif; font-size: clamp(2.2rem, 7vw, 3.4rem);
+    margin: 18px 0 8px; letter-spacing: -.02em; line-height: 1.3;
+  }
+  .lead { font-size: clamp(1.05rem, 3.2vw, 1.25rem); color: var(--muted); margin: 0 auto 28px; max-width: 34em; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px;
+    background: var(--accent); color: var(--accent-ink); text-decoration: none; font: 700 1.05rem "Noto Sans KR", sans-serif;
+    box-shadow: 0 8px 24px rgba(90, 85, 200, .25); border: 0; cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.05); }
+  .btn.ghost { background: transparent; color: var(--accent); box-shadow: none; border: 1.5px solid var(--accent); }
+  .btn.done { background: var(--good); color: #fff; }
+  .btn:focus-visible, summary:focus-visible, nav.toc a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .cta-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .meta { margin-top: 12px; font-size: .85rem; color: var(--muted); }
+  nav.toc { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 28px 0 0; }
+  nav.toc a {
+    font-size: .9rem; padding: 6px 12px; border-radius: 999px; background: var(--card);
+    border: 1px solid var(--line); text-decoration: none; color: var(--ink);
+  }
+
+  section { padding-block: 44px; }
+  h2 { font-family: "Gowun Dodum", "Noto Sans KR", sans-serif; font-size: clamp(1.5rem, 4.5vw, 2rem); margin: 0 0 6px; line-height: 1.4; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; backdrop-filter: blur(6px); }
+  .card h3 { margin: 4px 0 6px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .icon { font-size: 1.5rem; }
+
+  code, kbd {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: .88em; background: var(--code);
+    border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px;
+  }
+  kbd { border-bottom-width: 2px; font-weight: 700; }
+
+  /* 데모: 실제 앱 화면 아래에 뜨는 알약 창 */
+  .demo-box { display: grid; justify-items: center; gap: 12px; margin-top: 40px; }
+  .pill {
+    width: min(100%, 560px); height: 60px; border-radius: 30px; background: var(--pill); color: var(--pill-ink);
+    display: flex; align-items: center; gap: 18px; padding: 0 26px; box-shadow: 0 12px 32px rgba(27, 27, 60, .28);
+    overflow: hidden; text-align: left;
+  }
+  .bars { display: flex; gap: 4px; align-items: center; height: 26px; flex: none; }
+  .bars i { width: 3px; border-radius: 3px; background: var(--rec); height: 8px; animation: wob .9s ease-in-out infinite; }
+  .bars i:nth-child(2) { animation-delay: -.2s } .bars i:nth-child(3) { animation-delay: -.45s }
+  .bars i:nth-child(4) { animation-delay: -.1s } .bars i:nth-child(5) { animation-delay: -.6s }
+  @keyframes wob { 0%, 100% { height: 6px } 50% { height: 24px } }
+  .pill-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .98rem; }
+  .caret { display: inline-block; width: 1px; height: 1.05em; background: var(--pill-ink); vertical-align: -2px; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0 } }
+  .demo-cap { font-size: .88rem; color: var(--muted); }
+
+  /* 비교표 */
+  .table-card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 6px 4px; margin-top: 14px; overflow-x: auto; backdrop-filter: blur(6px); }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .95rem; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child th, tr:last-child td { border-bottom: 0; }
+  thead th { font-size: .85rem; color: var(--muted); font-weight: 500; }
+  tbody th { font-weight: 700; white-space: nowrap; }
+
+  /* 내 컴퓨터에서 될까 */
+  .fit { display: grid; gap: 10px; }
+  .fit .card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; }
+  .fit .card h3 { margin: 0; }
+  .fit .card p { grid-column: 1 / -1; }
+  .chip { font-size: .82rem; font-weight: 700; border-radius: 999px; padding: 3px 11px; white-space: nowrap; }
+  .chip.good { color: var(--good); background: var(--good-bg); }
+  .chip.mid { color: var(--mid); background: var(--mid-bg); }
+  .chip.bad { color: var(--bad); background: var(--bad-bg); }
+  .after { margin-top: 14px; font-size: .92rem; color: var(--muted); }
+
+  /* 만들기 */
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 10px; }
+  ol.steps li {
+    counter-increment: s; background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 16px 14px 56px; position: relative; backdrop-filter: blur(6px);
+  }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 16px; top: 13px; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); font-weight: 700; display: grid; place-items: center; font-size: .9rem;
+  }
+  ol.steps b { display: block; }
+  ol.steps span { color: var(--muted); font-size: .93rem; }
+
+  .copy-card { background: var(--card-solid); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 10px; }
+  .copy-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  .copy-head h3 { margin: 0; font-size: 1.05rem; }
+  .copy-head small { color: var(--muted); font-size: .85rem; }
+  .status { min-height: 1.4em; font-size: .9rem; color: var(--muted); }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+  details summary { cursor: pointer; font-weight: 700; }
+  details p { color: var(--muted); margin: 8px 0 0; }
+  .copy-card details { background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 10px 0 0; }
+  .copy-card summary { font-weight: 500; color: var(--muted); font-size: .92rem; }
+  pre {
+    background: var(--code); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; overflow: auto;
+    max-height: 380px; font-size: .8rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; margin: 10px 0 0;
+  }
+
+  /* 사용법 */
+  .keys { display: grid; gap: 10px; }
+  .keys .card { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 14px; align-items: center; }
+  .keys .card div:first-child { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: .9rem; }
+  .keys .card p { color: var(--ink); }
+
+  .tips { display: grid; gap: 12px; }
+  .warn { border-left: 4px solid var(--warn); }
+
+  footer { padding-block: 36px 56px; text-align: center; color: var(--muted); font-size: .85rem; }
+
+  @media (max-width: 640px) {
+    .keys .card { grid-template-columns: 1fr; gap: 6px; }
+    .pill { padding: 0 18px; gap: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .bars i, .caret { animation: none; }
+    .bars i { height: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="badge"><img src="icon.png" alt="">내 컴퓨터에서 도는 받아쓰기 앱 · Windows · 맥</span>
+    <h1>WhisperFlow</h1>
+    <p class="lead">키 하나 누르고 말하면, 커서 자리에 글이 써져요.<br>음성은 컴퓨터 밖으로 나가지 않고, 구독료도 없어요.</p>
+    <div class="cta-row">
+      <button class="btn" type="button" data-copy>📋 안내문 복사하기</button>
+      <a class="btn ghost" href="#make">만드는 방법 보기</a>
+    </div>
+    <p class="meta">무료 · 설치 20~40분 · Claude 유료 요금제(Pro 이상)가 있어야 따라 만들 수 있어요</p>
+    <p class="status" data-status role="status" aria-live="polite"></p>
+
+    <div class="demo-box" aria-label="실제 앱 화면 예시">
+      <div class="pill">
+        <div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="pill-text"><span id="demo-text">내일 오후 3시에 회의실에서 만나요.</span><span class="caret" aria-hidden="true"></span></div>
+      </div>
+      <div class="demo-cap"><kbd>`</kbd> 키를 누르고 있는 동안 화면 아래에 이 창이 떠요. 말하는 대로 글이 바로 보여요.</div>
+    </div>
+
+    <nav class="toc" aria-label="목차">
+      <a href="#first">처음이라면</a><a href="#can">할 수 있는 것</a><a href="#fit">내 컴퓨터에서 될까</a>
+      <a href="#make">만들기</a><a href="#use">사용법</a><a href="#trouble">문제 해결</a><a href="#know">알아 둘 점</a>
+    </nav>
+  </header>
+
+  <section id="first">
+    <h2>처음이라면 읽어 주세요 🙂</h2>
+    <p class="sub">코딩을 몰라도 괜찮아요. 만드는 건 Claude가 다 해요.</p>
+    <div class="grid">
+      <div class="card"><div class="icon">🎙️</div><h3>뭐 하는 앱이에요?</h3><p>키를 누른 채 말하면 받아써서, 카톡·메일·메모장처럼 지금 쓰고 있는 곳에 바로 넣어 줘요.</p></div>
+      <div class="card"><div class="icon">🤖</div><h3>Claude가 만들어 준다고요?</h3><p>내 컴퓨터의 Claude 앱에 안내문을 붙여넣으면, Claude가 사양을 확인하고 설치와 테스트까지 해요.</p></div>
+      <div class="card"><div class="icon">🔒</div><h3>안전한가요?</h3><p>음성 인식이 전부 내 컴퓨터 안에서 일어나요. 목소리와 받아쓴 글이 인터넷으로 나가지 않아요.</p></div>
+      <div class="card"><div class="icon">💸</div><h3>돈이 드나요?</h3><p>앱은 무료예요. 다만 만들 때 쓰는 Claude 앱의 Code 기능에 유료 요금제가 필요해요.</p></div>
+      <div class="card"><div class="icon">🙅</div><h3>마음에 안 들면요?</h3><p>Claude에게 "지워 줘"라고 하면 돼요. 단축키나 소리가 별로면 "바꿔 줘"라고 말하면 고쳐 줘요.</p></div>
+      <div class="card"><div class="icon">🆘</div><h3>어려우면요?</h3><p>막히는 화면을 그대로 Claude에게 말하면 돼요. 아래 '문제 해결'에 자주 생기는 일도 정리해 뒀어요.</p></div>
+    </div>
+  </section>
+
+  <section id="can">
+    <h2>무엇을 할 수 있나요?</h2>
+    <p class="sub">직접 몇 주 동안 써 보면서 불편한 점을 하나씩 고친 버전이에요.</p>
+    <div class="grid">
+      <div class="card"><div class="icon">⌨️</div><h3>어디서나 받아쓰기</h3><p>커서가 있는 곳이면 카톡, 메일, 메모장, 브라우저 어디든 입력돼요.</p></div>
+      <div class="card"><div class="icon">👀</div><h3>말하는 동안 글이 보여요</h3><p>화면 아래 작은 창에 인식 중인 글이 실시간으로 떠요.</p></div>
+      <div class="card"><div class="icon">🇰🇷🇺🇸</div><h3>한국어·영어 자동 구분</h3><p>영어로 말하면 영어로, 한국어로 말하면 한국어로 적어요. 번역되지 않아요.</p></div>
+      <div class="card"><div class="icon">🤫</div><h3>없는 말을 지어내지 않게</h3><p>숨소리나 웅얼거림은 글로 바꾸지 않고, 확실히 들린 말만 입력해요.</p></div>
+      <div class="card"><div class="icon">⏪</div><h3>날아간 글 되살리기</h3><p>실수로 다른 곳을 클릭해도, 키를 누른 채 <kbd>↑</kbd>로 이전 받아쓰기를 찾아 다시 넣어요.</p></div>
+      <div class="card"><div class="icon">🧹</div><h3>기록은 하루만</h3><p>받아쓴 내용은 24시간이 지나면 자동으로 지워져요.</p></div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead><tr><th scope="col"></th><th scope="col">WhisperFlow</th><th scope="col">Wispr Flow (유료)</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">가격</th><td>무료</td><td>월 구독</td></tr>
+          <tr><th scope="row">음성 처리</th><td>내 컴퓨터 안에서만</td><td>회사 서버</td></tr>
+          <tr><th scope="row">문장 다듬기</th><td>들은 그대로 받아써요</td><td>AI가 "음, 어"를 빼고 다듬어 줘요</td></tr>
+          <tr><th scope="row">기기</th><td>만든 컴퓨터 한 대</td><td>Mac, Windows, iPhone 동기화</td></tr>
+          <tr><th scope="row">고치기</th><td>Claude에게 말하면 바로 바꿔 줘요</td><td>설정 메뉴 안에서만</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="fit">
+    <h2>내 컴퓨터에서 될까?</h2>
+    <p class="sub">음성 인식을 컴퓨터가 직접 해서 사양에 따라 속도가 달라요. 설치할 때 Claude가 확인하고 알맞은 방식을 골라 줘요.</p>
+    <div class="fit">
+      <div class="card"><h3>💻 Mac · Apple 칩 (M1 이상)</h3><span class="chip good">아주 잘 돼요</span><p>2020년 말 이후 맥북 대부분이에요. 사과 메뉴 → 이 Mac에 관하여에서 '칩: Apple M…'이면 돼요.</p></div>
+      <div class="card"><h3>🎮 Windows · NVIDIA 그래픽카드</h3><span class="chip good">잘 돼요</span><p>게임용 PC라면 대부분 해당돼요. GTX 1060에서 3초 말하면 약 1초 만에 입력됐어요.</p></div>
+      <div class="card"><h3>🗂️ Windows · 그래픽카드 없음</h3><span class="chip mid">조금 느려요</span><p>사무용 노트북이 보통 여기예요. 더 작은 인식 모델을 써서 정확도가 조금 떨어질 수 있어요.</p></div>
+      <div class="card"><h3>🐢 Mac · Intel 칩</h3><span class="chip bad">많이 느려요</span><p>2020년 이전 맥이에요. 작은 모델로는 쓸 수 있지만 답답할 수 있어요.</p></div>
+    </div>
+    <p class="after">저장 공간은 2~4GB 정도 필요해요. 처음에 음성 인식 모델(약 1.5GB)을 내려받으니 Wi-Fi에서 해 주세요.</p>
+  </section>
+
+  <section id="make">
+    <h2>만들기</h2>
+    <p class="sub">중간에 몇 번 '허용' 버튼만 눌러 주면 돼요.</p>
+    <ol class="steps">
+      <li><b>Claude 데스크톱 앱을 설치해요.</b><span>claude.ai/download에서 받을 수 있어요. Code 탭은 Pro 이상 요금제에서 쓸 수 있어요.</span></li>
+      <li><b>Claude 앱에서 Code 탭을 열고 새 세션을 시작해요.</b><span>폴더를 고르라고 하면 내 홈 폴더(내 이름으로 된 폴더)를 고르면 돼요.</span></li>
+      <li><b>아래 안내문을 복사해서 붙여넣고 보내요.</b><span>Claude가 컴퓨터 사양을 확인하고, 무엇을 설치할지 먼저 물어본 뒤 진행해요.</span></li>
+      <li><b>Claude가 알려 주는 대로 허용하고, 마지막에 직접 말해 봐요.</b><span>맥은 마이크, 손쉬운 사용, 입력 모니터링 권한을 한 번씩 켜야 해요.</span></li>
+    </ol>
+
+    <div class="copy-card">
+      <div class="copy-head">
+        <div><h3>Claude에게 보낼 안내문</h3><small>기능 명세 · 겪었던 문제와 해결법 · 컴퓨터별 설치 방법 · 전체 코드 · 36,286자</small></div>
+        <button class="btn" type="button" data-copy>📋 안내문 복사하기</button>
+      </div>
+      <p class="status" data-status role="status" aria-live="polite"></p>
+      <details>
+        <summary>안내문 내용 보기</summary>
+        <pre id="prompt"># WhisperFlow 만들기: 내 컴퓨터용 무료 받아쓰기 앱
+
+친구가 Claude와 함께 "WhisperFlow"라는 받아쓰기 앱을 만들어서 쓰고 있어. Wispr Flow처럼 키를 누른 채 말하면, 지금 커서가 있는 곳(카톡, 메일, 메모, 브라우저 등 어디든)에 받아쓴 글이 입력되는 앱이야. 음성 인식은 전부 내 컴퓨터 안에서 처리하고, 무료야.
+
+**나도 똑같은 앱을 이 컴퓨터에 만들어서 설치해 줘. 설치가 끝나면 직접 테스트까지 해 줘.**
+
+아래에 기능 명세, 친구가 쓰면서 겪은 문제와 해결법, 컴퓨터 종류별 구현 가이드, 그리고 Windows 버전 전체 코드를 정리해 뒀어. 코드는 참고용이야. 이 컴퓨터 환경에 맞게 바꿔야 할 부분이 있어.
+
+나는 개발자가 아닐 수도 있어. 설명은 쉬운 한국어로 해 줘. 프로그램 설치나 권한 허용처럼 내가 직접 눌러야 하는 게 있으면 어디를 눌러야 하는지 단계별로 알려 주고, 시스템에 무언가를 설치하기 전에는 먼저 물어봐 줘.
+
+---
+
+## 0. 시작 전에 확인해 줘
+
+1. 이 컴퓨터의 운영체제(Windows/macOS), CPU, 메모리, 그래픽카드(NVIDIA 여부), 남은 저장 공간을 확인해 줘.
+2. 아래 "4. 컴퓨터 종류별 구현"에서 맞는 방식을 골라 나에게 짧게 설명해 줘. 예상 속도, 필요한 용량(대략 2~4GB), 설치할 것들을 알려 주고 진행해.
+3. 녹음 키는 기본으로 `` ` `` 키(숫자 1 왼쪽, 백틱)를 써. 이 키를 자주 쓰는지 나에게 물어보고, 쓴다면 다른 키를 같이 정해 줘.
+
+## 1. 기능 명세 (꼭 지켜 줘)
+
+1. **누르고 말하기:** 녹음 키를 누르고 있는 동안 녹음하고, 떼면 받아써서 커서 위치에 입력해.
+   - 앱이 켜져 있는 동안 녹음 키는 글자로 입력되면 안 돼. 이벤트를 가로채서 막아 줘.
+   - 0.3초보다 짧게 누르면 무시해.
+2. **화면에 실시간 표시:**
+   - 화면 아래 가운데에 어두운 알약 모양 창을 띄워 줘.
+   - 왼쪽에는 목소리 크기에 따라 움직이는 빨간 막대 5개, 오른쪽에는 말하는 동안 인식 중인 글을 계속 갱신해서 보여 줘. 글이 길면 "…"으로 앞부분을 자르고 끝부분을 보여 줘.
+   - 키를 떼면 "정리하는 중…"을 보여 주고, 입력이 끝나면 약 1.2초 뒤에 사라져.
+   - 이 창은 **포커스를 뺏으면 안 되고**(지금 쓰는 앱의 커서 유지), 클릭이 통과돼야 해.
+3. **부드러운 시작음과 종료음:**
+   - 옛날 기계음 같은 삑 소리는 싫어.
+   - 짧은 두 음 차임으로 해 줘. 시작할 때는 G5에서 D6으로 올라가고, 끝날 때는 D6에서 G5로 내려가.
+   - 사인파에 배음을 조금 섞고, 빠른 어택과 부드러운 감쇠를 줘. 길이는 약 0.22초, 볼륨은 작게(0.12).
+4. **발화 사이 띄어쓰기:**
+   - 같은 앱(창)에 이어서 받아쓰면, 두 번째부터는 앞에 띄어쓰기를 한 칸 넣어 줘.
+   - 이전 입력이 공백으로 끝났거나, 새 글이 문장부호로 시작하면 넣지 마.
+   - Enter나 Tab을 누르거나 다른 창으로 바꾸면 초기화해 줘.
+5. **한국어/영어 자동 인식:**
+   - 발화마다 언어를 감지하되, **ko와 en 중에서만** 확률이 높은 쪽을 골라 그 언어로 받아써 줘.
+   - `language="ko"`로 고정하면 영어가 한국어로 번역되거나 한글로 적히는 문제가 있었어.
+6. **이전 받아쓰기 다시 입력 (터미널 명령 기록처럼):**
+   - 실수로 다른 곳을 클릭해서 받아쓴 글이 날아가는 일이 있어서 만든 기능이야.
+   - 녹음 키를 누른 채 **↑**를 누르면 녹음을 버리고 '기록 고르기'로 바뀌어. 알약 창에 "↑↓" 표시와 "1/32   (가장 최근 글)"이 떠.
+   - ↑/↓로 이동하고, **Enter**를 누르면 그 글을 커서 위치에 입력해. **Esc**를 누르거나 녹음 키를 떼면 취소야.
+   - 녹음 키를 누르고 있을 때만 ↑↓/Enter/Esc를 가로채고, 평소에는 그대로 통과시켜.
+   - 받아쓴 글은 **붙여넣기 전에 먼저 기록에 저장**해. 그래야 붙일 곳이 없어도 남아.
+7. **개인정보:** 받아쓴 내용이 담긴 로그와 기록(history.json)은 **24시간이 지나면 자동으로 지워** 줘.
+8. **로그인 시 자동 실행:**
+   - 콘솔 창 없이 조용히 켜지게 해 줘.
+   - 켜질 때 "WhisperFlow 준비 중…"을 보여 주고, 준비되면 "준비 완료 — (키) 키를 누르고 말하세요"를 2.5초 동안 보여 줘.
+9. **트레이(맥은 메뉴 막대) 아이콘:** 여기서 종료할 수 있게 해 줘. 맥은 Dock 아이콘을 숨겨 줘.
+10. **중복 실행 방지:** 두 번 실행해도 하나만 켜지게 해 줘.
+11. **복사해 둔 내용 보존:** 붙여넣기에 클립보드를 쓰되, 원래 클립보드 내용은 복원해 줘.
+12. **아이콘:**
+    - 둥근 사각형 배경에 코랄(255,122,89)에서 핑크(240,84,140), 보라(124,77,255)로 가는 대각선 그라데이션을 깔아 줘.
+    - 그 위에 흰색 파형 막대 5개(높이 비율 0.26/0.46/0.66/0.46/0.26)와 은은한 광택을 넣어 줘. 아래 `make_icon.py`와 같은 디자인이야.
+    - 바탕화면(맥은 응용 프로그램) 바로가기와 트레이 아이콘에 써 줘.
+
+## 2. 겪었던 문제와 해결법 (같은 실수를 반복하지 않게)
+
+- **말하지 않은 말이 입력됨 (가장 중요):**
+  - 흐린 말끝, 숨소리, 웅얼거림을 Whisper가 억지로 글로 바꾸다가 "1 2 3 4 5…"처럼 숫자를 세거나, "시청해주셔서 감사합니다" 같은 문장을 지어냈어.
+  - 처음에는 숫자를 지우는 필터를 넣었는데 잘못된 방향이었어. 실제로 숫자를 말할 수도 있으니까. **내용으로 거르지 말고 '실제로 들렸는가'로만 걸러 줘.**
+  - 해결:
+    - ① **initial_prompt(예시 문장)를 쓰지 마.** 웅얼거림만 넣었더니 예시 문장을 그대로 베꼈어. 예시가 없어도 구두점은 잘 찍혀.
+    - ② VAD를 엄격하게 해 줘: `vad_filter=True`, `vad_parameters=dict(min_silence_duration_ms=500, speech_pad_ms=200)`. 기본값(2초/0.4초)은 흐린 말끝까지 포함돼.
+    - ③ 최종 받아쓰기에서 `word_timestamps=True`, `hallucination_silence_threshold=1.0`, `condition_on_previous_text=False`.
+    - ④ **단어별 확신도로 걸러 줘.** 측정해 보니 실제 말은 평균 0.93~0.99, 지어낸 문장은 0.11~0.36이었어. 그래서 덩어리(segment)의 평균이 0.5 미만이면 버리고, 0.3 미만인 단어가 4개 이상 연달아 나오면 그 구간을 버려(코드의 `confident_text`).
+    - ⑤ 미리보기는 빠른 설정(beam 1)으로 하고, `avg_logprob &lt;= -1.0`인 덩어리는 버려. 오디오가 1초 이상 쌓인 뒤에 시작해.
+    - ⑥ 유튜브 환각 문구는 **그 문장만 단독으로 나왔을 때만** 버려.
+  - 검증: 무음, 잡음, 웅얼거림(말소리를 거꾸로 뒤집고 작게 한 뒤 잡음을 섞은 것)은 빈 결과가 나와야 해. "말 + 웅얼거림"은 말한 부분만 나와야 하고, "인증번호는 1, 2, 3, 4, 5, 6, 7, 8이에요"는 숫자까지 그대로 나와야 해.
+- **부팅 직후 먹통:**
+  - 로그인 자동 실행 때 USB 헤드셋이 아직 인식되기 전에 앱이 먼저 켜지면, 오디오 라이브러리(PortAudio)가 장치 목록을 처음 한 번만 읽어서 마이크를 못 찾아.
+  - 해결: 마이크 열기에 실패하면 장치 목록을 새로 읽고(`sd._terminate(); sd._initialize()`) 다시 시도해. 그래도 안 되면 "마이크를 찾을 수 없어요"를 보여 주고, 키를 뗄 때까지 다시 시도하지 마.
+  - 화면 갱신 루프 전체를 try/except로 감싸서, 어떤 오류가 나도 루프가 멈추지 않게 해 줘.
+- **헤드셋 음소거:**
+  - 헤드셋의 하드웨어 음소거 버튼이 켜져 있으면 Windows는 모르고 무음만 들어와. 그러면 앱이 "인식된 말이 없습니다"만 반복했어.
+  - 해결: 녹음의 최대 음량이 0.0005 미만이면 받아쓰지 말고 "마이크에 소리가 안 들어와요. 헤드셋 음소거 버튼을 확인해 주세요."를 보여 줘.
+- **앱이 저절로 꺼짐:**
+  - Claude 세션 안에서 앱을 (재)실행하면, 세션이 정리될 때 앱도 같이 조용히 꺼졌어.
+  - 앱을 실행하거나 재시작할 때는 **반드시 사용자가 더블클릭한 것처럼** 실행해 줘. Windows는 `explorer.exe "바로가기.lnk"`, 맥은 `open -a`나 LaunchAgent를 써.
+  - 종료할 때와 비정상 종료 때 로그를 남겨 줘(atexit, faulthandler).
+- **테스트 중 다른 앱에 키가 입력됨:**
+  - 키 입력을 흉내 내서 테스트할 때 메모장이 맨 앞으로 오지 않아서, 사용자가 열어 둔 다른 앱에 키가 들어간 적이 있어.
+  - 키를 보내기 전에 매번 **대상 창이 맨 앞인지 확인하고, 아니면 키를 하나도 보내지 말고 중단**해 줘. Windows는 Alt를 한 번 누른 뒤 SetForegroundWindow를 쓰면 맨 앞으로 가져올 수 있어.
+- **pythonw 출력:** 콘솔이 없어서 stdout을 로그 파일로 돌려야 해.
+
+## 3. Windows 버전 구조 (참고)
+
+- 설치 위치는 `%USERPROFILE%\WhisperFlow`, Python 3.12 가상환경(venv)을 써.
+- 받아쓰기: 녹음 중에는 미리보기 스레드가 누적된 오디오(최근 25초)를 계속 다시 받아써. 키를 떼면 큐에 넣고, 워커가 순서대로 정확한 설정(beam 5)으로 받아써.
+- 모델은 lock으로 한 번에 하나만 써.
+- 언어 감지: 미리보기는 1.5초 이상 쌓였을 때 한 번 감지해서 고정하고, 최종에서는 다시 감지해.
+- 화면 표시는 tkinter 창이야. 투명색, 항상 위, WS_EX_NOACTIVATE와 WS_EX_TRANSPARENT를 적용하고 약 30fps로 다시 그려.
+- 트레이는 pystray, 키 입력은 `keyboard` 라이브러리를 써. `hook_key(..., suppress=True)`에서 콜백이 False를 돌려주면 키를 가로채고, True면 통과시켜.
+- 자동 실행은 시작 프로그램 폴더의 바로가기로 해. 대상은 venv의 `pythonw.exe`야.
+
+## 4. 컴퓨터 종류별 구현
+
+- **Windows + NVIDIA 그래픽카드 (가장 빠름):**
+  - faster-whisper, `large-v3-turbo`, `device="cuda"`를 써.
+  - compute_type은 `int8_float32`부터 시도하고, 안 되면 float32, 마지막으로 CPU 순서로 내려가.
+  - `nvidia-cublas-cu12`와 `nvidia-cudnn-cu12==9.*`를 pip로 설치하고, 그 `bin` 폴더를 `os.add_dll_directory`와 PATH에 등록해.
+  - `ctranslate2.dll` 로드 실패가 나면 Visual C++ 재배포 패키지가 없는 거야. winget `Microsoft.VCRedist.2015+.x64`로 설치해(관리자 확인 창이 떠).
+  - 참고로 GTX 1060 기준 3초 발화에 약 1초 걸렸어.
+- **Windows + NVIDIA 없음:**
+  - faster-whisper CPU `int8`을 써. 실제로 속도를 재 보고 `small`, `medium`, `large-v3-turbo` 중에서 받아쓰기가 2~3초 안에 끝나는 가장 큰 모델을 골라 줘.
+  - CPU에서는 미리보기가 무거우니까, 미리보기 간격을 늘리거나 끄는 걸 나에게 물어봐 줘.
+- **Mac (Apple M1 이상):**
+  - mlx-whisper + `mlx-community/whisper-large-v3-turbo`를 추천해.
+  - ko/en 중 고르는 언어 감지는 mlx-whisper의 detect_language(mel 기반 확률)를 활용해. 확신도 필터에 필요한 단어별 확률은 word_timestamps로 얻을 수 있는지 확인해 줘.
+  - 녹음 키: Quartz `CGEventTap`으로 키(`` ` ``는 keycode 50. ISO 배열이면 10일 수 있으니 실제로 확인해 줘)의 keyDown/keyUp을 잡아서 삼켜 줘. ↑↓/Enter/Esc는 녹음 키를 누르고 있을 때만 삼켜.
+  - 권한: 마이크, 손쉬운 사용, 입력 모니터링 권한이 필요해. **"WhisperFlow"라는 이름의 .app으로 묶어서** 권한 목록에 그 이름으로 보이게 해 줘(py2app이나 작은 런처 .app). 권한을 허용하는 방법을 단계별로 안내해 줘.
+  - 화면 표시: PyObjC `NSPanel`에 `NSWindowStyleMaskNonactivatingPanel`과 `ignoresMouseEvents`를 쓰고, 모든 Space와 전체화면 앱 위에 뜨게 해 줘. Retina에서 선명하게 해 줘.
+  - 붙여넣기는 NSPasteboard + CGEvent Cmd+V, 같은 앱 판단은 `NSWorkspace.frontmostApplication`을 써.
+  - 메뉴 막대는 NSStatusItem, 자동 실행은 LaunchAgent나 로그인 항목으로 해 줘.
+  - Intel Mac이면 속도가 많이 느려. 미리 알려 주고 작은 모델을 제안해 줘.
+
+## 5. 테스트 (설치 후 꼭 해 줘)
+
+- 테스트용 음성을 만들어 줘. Windows는 SAPI(System.Speech)의 한국어/영어 음성, 맥은 `say -v Yuna`/`say -v Samantha`를 쓰면 돼. 16kHz 모노로 변환해서 아래를 확인해 줘.
+  - 언어 감지: 한국어 문장, 영어 문장, 짧은 영어("Sounds good, thanks.")
+  - 환각 방지: 무음, 잡음, 웅얼거림, 말 + 웅얼거림, 숫자를 실제로 말하기
+- 기록 고르기는 메모장(맥은 텍스트 편집기)에서 키 입력을 흉내 내서 확인해 줘. **반드시 창이 맨 앞인지 확인한 다음에만** 키를 보내.
+- 마지막에는 내가 직접 메모 앱에서 녹음 키를 누르고 말해 보도록 안내하고, 사용법을 짧게 정리해 줘.
+
+## 6. Windows 버전 전체 코드 (참고용)
+
+### whisper_flow.py
+
+```python
+"""
+WhisperFlow - 말하면 지금 커서가 있는 곳에 글자로 입력해 주는 받아쓰기 도구.
+
+사용법: ` 키(숫자 1 왼쪽)를 누르고 있는 동안 말하고, 떼면 받아쓴 글이 입력됩니다.
+말하는 동안 화면 아래에 인식 중인 글이 보입니다.
+종료: 작업 표시줄 오른쪽 아래(트레이)의 WhisperFlow 아이콘 → 종료
+"""
+import os
+import sys
+import glob
+import json
+import math
+import time
+import wave
+import queue
+import ctypes
+import struct
+import threading
+import winsound
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ───────────── 설정 ─────────────
+HOTKEY = 41                       # 누르고 있는 동안 녹음 (41 = ` 키, 숫자 1 왼쪽)
+HOTKEY_LABEL = "`"
+MODEL = "large-v3-turbo"          # 느리면 "medium" 또는 "small"
+LANGUAGES = ("ko", "en")          # 이 중에서 발화마다 자동으로 골라 받아씀
+MIN_SECONDS = 0.3                 # 이보다 짧게 누르면 무시
+SOUND_VOLUME = 0.12               # 시작/끝 소리 크기 (0 ~ 1)
+SPACE_BETWEEN_UTTERANCES = True   # 같은 창에 이어서 말하면 앞에 띄어쓰기 한 칸
+SAMPLE_RATE = 16000
+# ────────────────────────────────
+
+
+# pythonw로 실행하면 콘솔이 없으므로 기록은 파일로 남김
+LOG_PATH = os.path.join(APP_DIR, "whisper_flow.log")
+LOG_KEEP_HOURS = 24               # 받아쓴 말이 담긴 기록은 이 시간만 남기고 지움
+LOG_STAMP = "[%Y-%m-%d %H:%M:%S] "
+
+
+def prune_log():
+    """LOG_KEEP_HOURS가 지난 기록 줄을 지운다. 줄 앞의 날짜로 판단하고,
+    날짜가 없는 줄(충돌 기록 등)은 바로 앞 줄과 같이 남기거나 지운다."""
+    import re
+    try:
+        sys.stdout.flush()
+    except Exception:
+        pass
+    try:
+        with open(LOG_PATH, encoding="utf-8") as f:
+            lines = f.readlines()
+    except OSError:
+        return
+    cutoff = time.time() - LOG_KEEP_HOURS * 3600
+    keep, keeping = [], False
+    for line in lines:
+        m = re.match(r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]", line)
+        if m:
+            keeping = time.mktime(time.strptime(m.group(1), "%Y-%m-%d %H:%M:%S")) &gt;= cutoff
+        if keeping:
+            keep.append(line)
+    if len(keep) != len(lines):
+        with open(LOG_PATH, "w", encoding="utf-8") as f:
+            f.writelines(keep)
+
+
+def _prune_forever():
+    while True:
+        prune_log()
+        time.sleep(3600)
+
+
+if sys.stdout is None or not sys.stdout.isatty():
+    prune_log()
+    sys.stdout = sys.stderr = open(LOG_PATH, "a", encoding="utf-8", buffering=1)
+    threading.Thread(target=_prune_forever, daemon=True).start()
+
+
+# 꺼진 원인을 알 수 있게: 파이썬 내부 충돌은 로그에 기록, 정상 종료도 기록
+import atexit
+import faulthandler
+faulthandler.enable(file=sys.stdout)
+atexit.register(lambda: print(time.strftime(LOG_STAMP) + "앱 종료"))
+
+
+def single_instance():
+    ctypes.windll.kernel32.CreateMutexW(None, False, "WhisperFlow.SingleInstance")
+    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        sys.exit(0)
+
+
+def add_cuda_dll_paths():
+    # pip로 설치한 nvidia-cublas / nvidia-cudnn DLL을 찾을 수 있게 등록
+    base = os.path.join(sys.prefix, "Lib", "site-packages", "nvidia")
+    for bin_dir in glob.glob(os.path.join(base, "*", "bin")):
+        os.add_dll_directory(bin_dir)
+        os.environ["PATH"] = bin_dir + os.pathsep + os.environ["PATH"]
+
+
+single_instance()
+add_cuda_dll_paths()
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import sounddevice as sd
+import keyboard
+import pyperclip
+import tkinter as tk
+import pystray
+from PIL import Image, ImageDraw
+from faster_whisper import WhisperModel
+
+user32 = ctypes.windll.user32
+
+
+def log(msg):
+    print(time.strftime(LOG_STAMP) + msg)
+
+
+# ───────────── 소리 ─────────────
+
+def make_chime(path, notes):
+    """부드럽게 사라지는 짧은 두 음 차임을 wav 파일로 만든다."""
+    sr = 44100
+    total = int(sr * 0.22)
+    buf = np.zeros(total)
+    for i, freq in enumerate(notes):
+        start = int(sr * 0.06 * i)
+        t = np.arange(total - start) / sr
+        env = np.exp(-t * 28) * np.minimum(1, t / 0.004)   # 빠른 어택, 부드러운 감쇠
+        tone = np.sin(2 * np.pi * freq * t) + 0.25 * np.sin(4 * np.pi * freq * t)
+        buf[start:] += tone * env
+    buf = buf / np.max(np.abs(buf)) * SOUND_VOLUME
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((buf * 32767).astype(np.int16).tobytes())
+
+
+SOUND_START = os.path.join(APP_DIR, "start.wav")
+SOUND_STOP = os.path.join(APP_DIR, "stop.wav")
+make_chime(SOUND_START, (784, 1175))   # G5 → D6, 올라가는 소리
+make_chime(SOUND_STOP, (1175, 784))    # D6 → G5, 내려가는 소리
+
+
+def play(path):
+    winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
+
+
+# ───────────── 녹음 / 인식 ─────────────
+
+class Recorder:
+    def __init__(self):
+        self.frames = []
+        self.level = 0.0
+        self.lock = threading.Lock()
+        self.stream = None
+
+    def _callback(self, data, *_):
+        with self.lock:
+            self.frames.append(data.copy())
+        self.level = float(np.sqrt(np.mean(data ** 2)))
+
+    def _open(self):
+        self.stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1,
+                                     dtype="float32", callback=self._callback)
+        self.stream.start()
+
+    def start(self):
+        self.frames = []
+        self.stream = None
+        try:
+            self._open()
+        except Exception as e:
+            # 부팅 직후 USB 헤드셋이 늦게 잡히거나, 헤드셋을 다시 꽂으면
+            # 예전 장치 목록이 남아 있으므로 목록을 새로 읽고 다시 시도
+            log(f"마이크 열기 실패, 장치 목록 새로 읽는 중: {e}")
+            sd._terminate()
+            sd._initialize()
+            self._open()
+
+    def snapshot(self):
+        with self.lock:
+            if not self.frames:
+                return np.zeros(0, dtype=np.float32)
+            return np.concatenate(self.frames).flatten()
+
+    def stop(self):
+        if self.stream is not None:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception as e:
+                log(f"마이크 닫기 오류: {e}")
+            self.stream = None
+        self.level = 0.0
+        return self.snapshot()
+
+
+class Transcriber:
+    def __init__(self):
+        self.model = None
+        self.lock = threading.Lock()   # 모델은 한 번에 하나씩만 사용
+
+    def load(self):
+        for device, compute in (("cuda", "int8_float32"), ("cuda", "float32"), ("cpu", "int8")):
+            try:
+                log(f"모델 불러오는 중... ({MODEL}, {device}/{compute})")
+                self.model = WhisperModel(MODEL, device=device, compute_type=compute)
+                list(self.model.transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32), language="ko")[0])
+                log(f"준비 완료 ({device})")
+                return
+            except Exception as e:
+                log(f"  {device}/{compute} 사용 불가: {e}")
+        raise RuntimeError("모델을 불러올 수 없습니다.")
+
+    def detect(self, audio):
+        """한국어/영어 중 더 가능성 높은 쪽을 고른다."""
+        with self.lock:
+            _, _, probs = self.model.detect_language(audio[: SAMPLE_RATE * 30])
+        probs = dict(probs)
+        return max(LANGUAGES, key=lambda l: probs.get(l, 0.0))
+
+    def transcribe(self, audio, language, final):
+        """말소리가 실제로 들린 부분만 받아쓴다.
+        예시 문장(initial_prompt)은 쓰지 않음: 말이 불분명하면 예시를 베껴 쓰는 원인이었음."""
+        with self.lock:
+            segments, _ = self.model.transcribe(
+                audio, language=language,
+                initial_prompt=None,
+                vad_filter=True,
+                # 말이 끝나고 0.5초 넘게 조용하면 거기서 끊음 (기본값 2초는 흐린 말끝·숨소리까지 포함됨)
+                vad_parameters=dict(min_silence_duration_ms=500, speech_pad_ms=200),
+                beam_size=5 if final else 1,
+                condition_on_previous_text=False,
+                # 최종 받아쓰기: 단어별 확신도를 받아서 '들리지 않았는데 지어낸' 부분을 걸러냄
+                word_timestamps=final,
+                hallucination_silence_threshold=1.0 if final else None,
+            )
+            texts = []
+            for s in segments:
+                if s.no_speech_prob &gt; 0.6 and s.avg_logprob &lt; -0.8:
+                    continue
+                if final:
+                    text = confident_text(s.words)
+                else:
+                    text = s.text.strip() if s.avg_logprob &gt; -1.0 else ""
+                if text:
+                    texts.append(text)
+        return clean_hallucinations(" ".join(texts).strip())
+
+
+# 단어별 확신도(0~1) 기준. 실제 말은 평균 0.93~0.99, 지어낸 문장은 0.11~0.36이었음.
+MIN_SEGMENT_CONFIDENCE = 0.5   # 한 덩어리의 평균 확신도가 이보다 낮으면 통째로 버림
+MIN_WORD_CONFIDENCE = 0.3      # 이보다 낮은 단어가 4개 이상 연달아 나오면 그 구간을 버림
+
+
+def confident_text(words):
+    """Whisper가 확신하지 못한(=실제로 들리지 않은) 부분을 뺀 글을 돌려준다.
+    내용(숫자인지 등)은 보지 않고, 오직 '들렸는가'로만 판단."""
+    if not words:
+        return ""
+    if sum(w.probability for w in words) / len(words) &lt; MIN_SEGMENT_CONFIDENCE:
+        return ""
+    keep, run = [], []
+    for w in words:
+        if w.probability &lt; MIN_WORD_CONFIDENCE:
+            run.append(w)
+            continue
+        if len(run) &lt; 4:
+            keep.extend(run)
+        run = []
+        keep.append(w)
+    if len(run) &lt; 4:
+        keep.extend(run)
+    return "".join(w.word for w in keep).strip()
+
+
+# Whisper가 조용할 때 지어내곤 하는 문장들 (유튜브 자막에서 배운 것).
+# 이 문장만 단독으로 나왔을 때만 버림.
+HALLUCINATIONS = (
+    "시청해주셔서 감사합니다", "시청해 주셔서 감사합니다", "구독과 좋아요", "구독 좋아요",
+    "좋아요와 구독", "MBC 뉴스", "KBS 뉴스", "다음 영상에서 만나요", "자막 제공",
+    "Thank you for watching", "Thanks for watching", "Please subscribe", "Subtitles by",
+)
+
+
+def clean_hallucinations(text):
+    stripped = text.strip(" .!?。")
+    for phrase in HALLUCINATIONS:
+        if stripped == phrase.strip(" .!?。"):
+            return ""
+    return " ".join(text.split())
+
+
+# ───────────── 붙여넣기 / 띄어쓰기 ─────────────
+
+class Paster:
+    """같은 창에 이어서 받아쓰면 앞에 띄어쓰기를 한 칸 넣는다."""
+
+    def __init__(self):
+        self.last_hwnd = None
+        self.last_char = ""
+        # 엔터/탭을 누르거나 창을 바꾸면 '이어쓰기'가 아닌 것으로 봄
+        keyboard.on_press_key("enter", lambda e: self.reset())
+        keyboard.on_press_key("tab", lambda e: self.reset())
+
+    def reset(self):
+        self.last_hwnd = None
+
+    def paste(self, text):
+        hwnd = user32.GetForegroundWindow()
+        if (SPACE_BETWEEN_UTTERANCES and hwnd == self.last_hwnd
+                and self.last_char and not self.last_char.isspace()
+                and text[:1] not in ".,!?;:)]}'\"。"):
+            text = " " + text
+
+        old = None
+        try:
+            old = pyperclip.paste()
+        except Exception:
+            pass
+        pyperclip.copy(text)
+        time.sleep(0.05)
+        keyboard.send("ctrl+v")
+        time.sleep(0.3)
+        if old is not None:
+            pyperclip.copy(old)  # 원래 클립보드 내용 복원
+
+        self.last_hwnd = hwnd
+        self.last_char = text[-1:]
+
+
+# ───────────── 받아쓰기 기록 ─────────────
+
+class History:
+    """받아쓴 글을 순서대로 보관. 컴퓨터를 껐다 켜도 남도록 파일에 저장.
+    로그와 똑같이 LOG_KEEP_HOURS가 지난 것은 지움."""
+
+    PATH = os.path.join(APP_DIR, "history.json")
+    MAX = 100
+
+    def __init__(self):
+        self.items = []   # [{"t": 시각, "text": 글}, …] 오래된 것 → 최근 것
+        self.lock = threading.Lock()
+        try:
+            with open(self.PATH, encoding="utf-8") as f:
+                self.items = json.load(f)
+        except FileNotFoundError:
+            self.items = self._from_log()   # 처음 한 번: 기록 파일에 남아 있는 것을 가져옴
+        except Exception:
+            pass
+        with self.lock:
+            self._prune()
+            self._save()
+
+    @staticmethod
+    def _from_log():
+        import re
+        pattern = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] \[(?:ko|en), [\d.]+초\] (.+)$")
+        items = []
+        try:
+            with open(LOG_PATH, encoding="utf-8") as f:
+                for line in f:
+                    m = pattern.match(line.rstrip("\n"))
+                    if m:
+                        t = time.mktime(time.strptime(m.group(1), "%Y-%m-%d %H:%M:%S"))
+                        items.append({"t": t, "text": m.group(2)})
+        except Exception:
+            pass
+        return items
+
+    def _prune(self):
+        cutoff = time.time() - LOG_KEEP_HOURS * 3600
+        self.items = [i for i in self.items if i.get("t", 0) &gt;= cutoff][-self.MAX:]
+
+    def _save(self):
+        try:
+            tmp = self.PATH + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(self.items, f, ensure_ascii=False, indent=0)
+            os.replace(tmp, self.PATH)
+        except Exception as e:
+            log(f"기록 저장 오류: {e}")
+
+    def prune_forever(self):
+        while True:
+            time.sleep(3600)
+            with self.lock:
+                self._prune()
+                self._save()
+
+    def add(self, text):
+        with self.lock:
+            self.items.append({"t": time.time(), "text": text})
+            self._prune()
+            self._save()
+
+    def get(self, back):
+        """back=0이 가장 최근, 1이 그 이전…"""
+        with self.lock:
+            self._prune()
+            return self.items[-1 - back]["text"] if 0 &lt;= back &lt; len(self.items) else None
+
+    def __len__(self):
+        with self.lock:
+            self._prune()
+            return len(self.items)
+
+
+# ───────────── 화면 표시 (오버레이) ─────────────
+
+BG = "#1c1c1f"
+FG = "#f2f2f2"
+FG_DIM = "#9a9aa0"
+ACCENT = "#ff5a5f"
+KEY = "#010203"   # 투명 처리용 색
+
+
+class Overlay:
+    """화면 아래에 뜨는 반투명 알약 모양 창. 포커스를 뺏지 않고 클릭도 통과시킨다."""
+
+    WIDTH = 620
+
+    def __init__(self, root):
+        self.root = root
+        self.scale = root.winfo_fpixels("1i") / 96
+        s = self.scale
+        self.w = int(self.WIDTH * s)
+        self.h = int(64 * s)
+
+        root.overrideredirect(True)
+        root.attributes("-topmost", True)
+        root.attributes("-transparentcolor", KEY)
+        root.attributes("-alpha", 0.0)
+        root.configure(bg=KEY)
+
+        self.canvas = tk.Canvas(root, bg=KEY, highlightthickness=0, width=self.w, height=self.h)
+        self.canvas.pack()
+        self.font = ("Malgun Gothic", 11)
+        self.visible = False
+        self.state = "idle"
+        self.text = ""
+        self.level = 0.0
+        self.hide_at = None
+        self.phase = 0.0
+        self._layout()
+
+        root.update_idletasks()
+        hwnd = user32.GetParent(root.winfo_id())
+        GWL_EXSTYLE = -20
+        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        # WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_LAYERED
+        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style | 0x08000000 | 0x80 | 0x20 | 0x80000)
+
+    def _layout(self):
+        sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
+        x = (sw - self.w) // 2
+        y = sh - self.h - int(90 * self.scale)
+        self.root.geometry(f"{self.w}x{self.h}+{x}+{y}")
+
+    def _round_rect(self, x1, y1, x2, y2, r, **kw):
+        c = self.canvas
+        c.create_oval(x1, y1, x1 + 2 * r, y1 + 2 * r, **kw)
+        c.create_oval(x2 - 2 * r, y1, x2, y1 + 2 * r, **kw)
+        c.create_oval(x1, y2 - 2 * r, x1 + 2 * r, y2, **kw)
+        c.create_oval(x2 - 2 * r, y2 - 2 * r, x2, y2, **kw)
+        c.create_rectangle(x1 + r, y1, x2 - r, y2, **kw)
+        c.create_rectangle(x1, y1 + r, x2, y2 - r, **kw)
+
+    def show(self, state, text="", hide_after=None):
+        self.state = state
+        self.text = text
+        self.hide_at = time.time() + hide_after if hide_after else None
+        if not self.visible:
+            self.root.attributes("-alpha", 0.94)
+            self.visible = True
+
+    def hide(self):
+        self.visible = False
+        self.state = "idle"
+        self.root.attributes("-alpha", 0.0)
+
+    def draw(self):
+        c, s = self.canvas, self.scale
+        c.delete("all")
+        if not self.visible:
+            return
+        if self.hide_at and time.time() &gt; self.hide_at:
+            self.hide()
+            return
+
+        r = self.h // 2
+        self._round_rect(0, 0, self.w - 1, self.h - 1, r, fill=BG, outline=BG)
+
+        # 왼쪽: 녹음 중이면 소리 크기에 따라 움직이는 막대, 처리 중이면 점 세 개
+        cx, cy = int(34 * s), self.h // 2
+        self.phase += 0.35
+        if self.state == "history":
+            c.create_text(cx, cy, text="↑↓", fill=ACCENT, font=(self.font[0], 12, "bold"))
+        elif self.state == "recording":
+            lvl = min(1.0, self.level * 18)
+            for i, off in enumerate((-12, -6, 0, 6, 12)):
+                wob = 0.55 + 0.45 * math.sin(self.phase + i * 1.3)
+                bh = max(3, (4 + 20 * lvl * wob)) * s
+                x = cx + off * s
+                c.create_line(x, cy - bh / 2, x, cy + bh / 2, fill=ACCENT,
+                              width=max(2, int(3 * s)), capstyle="round")
+        else:
+            for i in range(3):
+                a = 0.5 + 0.5 * math.sin(self.phase - i * 0.9)
+                color = FG if (self.state == "processing" and a &gt; 0.6) else FG_DIM
+                x = cx + (i - 1) * 9 * s
+                c.create_oval(x - 2.5 * s, cy - 2.5 * s, x + 2.5 * s, cy + 2.5 * s,
+                              fill=color, outline=color)
+
+        # 오른쪽: 글. 길면 잘라서 보여줌
+        # (인식 중에는 끝부분, 기록을 고를 때는 앞부분이 보이게)
+        text = self.text or {"recording": "듣고 있어요…", "processing": "정리하는 중…"}.get(self.state, "")
+        color = FG if self.text else FG_DIM
+        max_w = self.w - int(80 * s)
+        item = c.create_text(int(64 * s), cy, text=text, fill=color, font=self.font, anchor="w")
+        if c.bbox(item)[2] - c.bbox(item)[0] &gt; max_w:
+            keep_start = self.state == "history"
+            cut = (lambda n: text[:len(text) - n] + "…") if keep_start else (lambda n: "…" + text[n:])
+            lo, hi = 0, len(text)
+            while lo &lt; hi:
+                mid = (lo + hi) // 2
+                c.itemconfigure(item, text=cut(mid))
+                bb = c.bbox(item)
+                if bb[2] - bb[0] &gt; max_w:
+                    lo = mid + 1
+                else:
+                    hi = mid
+            c.itemconfigure(item, text=cut(lo))
+
+
+# ───────────── 트레이 아이콘 ─────────────
+
+def tray_image():
+    path = os.path.join(APP_DIR, "icon.png")
+    if os.path.exists(path):
+        return Image.open(path)
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse((2, 2, 62, 62), fill=(28, 28, 31, 255))
+    for x, h in ((20, 14), (27, 26), (34, 36), (41, 24), (48, 12)):
+        d.rounded_rectangle((x - 2, 32 - h // 2, x + 2, 32 + h // 2), radius=2, fill=(255, 90, 95, 255))
+    return img
+
+
+# ───────────── 앱 ─────────────
+
+class App:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.overlay = Overlay(self.root)
+        self.recorder = Recorder()
+        self.transcriber = Transcriber()
+        self.paster = None
+        self.events = queue.Queue()        # 다른 스레드 → 화면 갱신
+        self.finals = queue.Queue()        # 받아쓸 녹음들 (순서대로 처리)
+        self.key_down = threading.Event()
+        self.recording = False
+        self.mic_failed = False
+        self.ready = False
+        self.history = History()
+        threading.Thread(target=self.history.prune_forever, daemon=True).start()
+        # 녹음 키를 누르고 있는 동안의 상태:
+        #   idle → recording (말하는 중) → history (↑↓로 이전 기록 고르는 중) → wait_release (입력/취소 후 키 떼기 기다림)
+        self.mode = "idle"
+        self.hist_index = 0
+
+        self.tray = pystray.Icon("WhisperFlow", tray_image(), "WhisperFlow (준비 중)",
+                                 menu=pystray.Menu(pystray.MenuItem("종료", self.quit)))
+        self.tray.run_detached()
+
+        threading.Thread(target=self.startup, daemon=True).start()
+        self.tick()
+
+    # 모델 불러오기 → 키 등록
+    def startup(self):
+        self.events.put(("show", "processing", "WhisperFlow 준비 중…", None))
+        try:
+            self.transcriber.load()
+        except Exception as e:
+            log(str(e))
+            self.events.put(("show", "idle", "모델을 불러오지 못했어요. 로그를 확인해 주세요.", 8))
+            return
+        self.paster = Paster()
+        # suppress=True: 녹음 키가 글자로 입력되지 않도록 가로챔
+        keyboard.on_press_key(HOTKEY, lambda e: self.key_down.set(), suppress=True)
+        keyboard.on_release_key(HOTKEY, lambda e: self.key_down.clear(), suppress=True)
+        # 녹음 키를 누르고 있을 때만 ↑ ↓ Enter Esc를 가로채서 기록 고르기에 씀.
+        # 녹음 키를 안 누르고 있으면 평소처럼 그대로 통과.
+        for name in ("up", "down", "enter", "esc"):
+            keyboard.hook_key(name, lambda e, n=name: self.on_nav_key(e, n), suppress=True)
+        threading.Thread(target=self.final_worker, daemon=True).start()
+        self.ready = True
+        self.tray.title = f"WhisperFlow — {HOTKEY_LABEL} 키를 누르고 말하세요"
+        self.events.put(("show", "idle", f"준비 완료 — {HOTKEY_LABEL} 키를 누르고 말하세요", 2.5))
+
+    # 화면 갱신 + 키 상태 확인 (약 30fps)
+    def tick(self):
+        while not self.events.empty():
+            kind, *args = self.events.get()
+            if kind == "show":
+                state, text, hide_after = args
+                self.overlay.show(state, text, hide_after)
+            elif kind == "partial" and self.recording:
+                self.overlay.text = args[0]
+            elif kind == "hide":
+                self.overlay.hide()
+            elif kind == "nav":
+                try:
+                    self.handle_nav(args[0])
+                except Exception as e:
+                    log(f"기록 고르기 오류: {e}")
+            elif kind == "quit":
+                self.root.destroy()
+                return
+
+        # 오류가 나도 화면 갱신 루프는 절대 멈추지 않게 함
+        try:
+            if self.ready:
+                if not self.key_down.is_set():
+                    if self.mode == "recording":
+                        self.stop_recording()
+                    elif self.mode == "history":
+                        self.overlay.hide()       # 고르다가 키를 떼면 취소
+                    self.mode = "idle"
+                    self.mic_failed = False
+                elif self.mode == "idle" and not self.mic_failed:
+                    self.start_recording()
+
+            self.overlay.level = self.recorder.level
+            self.overlay.draw()
+        except Exception as e:
+            log(f"화면 갱신 오류: {e}")
+        self.root.after(33, self.tick)
+
+    def start_recording(self):
+        try:
+            self.recorder.start()
+        except Exception as e:
+            log(f"마이크를 열 수 없음: {e}")
+            self.mic_failed = True   # 키를 뗄 때까지 다시 시도하지 않음
+            self.overlay.show("idle", "마이크를 찾을 수 없어요. 헤드셋 연결을 확인해 주세요.", 3)
+            return
+        play(SOUND_START)
+        self.recording = True
+        self.mode = "recording"
+        self.t0 = time.time()
+        self.overlay.show("recording")
+        threading.Thread(target=self.partial_worker, daemon=True).start()
+
+    def cancel_recording(self):
+        """녹음을 버림 (받아쓰지 않음)."""
+        if self.recording:
+            self.recording = False
+            self.recorder.stop()
+
+    # ── 이전 기록 고르기: 녹음 키를 누른 채 ↑↓, Enter로 입력, Esc나 키 떼기로 취소 ──
+
+    def on_nav_key(self, event, name):
+        """키보드 스레드에서 불림. True면 키를 그대로 통과, False면 가로챔."""
+        if not (self.ready and self.key_down.is_set()):
+            return True
+        if event.event_type == "down":
+            self.events.put(("nav", name))
+        return False
+
+    def handle_nav(self, name):
+        if self.mode == "wait_release":
+            return
+        if name in ("up", "down"):
+            if self.mode != "history":
+                self.cancel_recording()
+                self.mode = "history"
+                self.hist_index = 0
+            elif name == "up":
+                self.hist_index = min(self.hist_index + 1, len(self.history) - 1)
+            else:
+                self.hist_index = max(self.hist_index - 1, 0)
+            self.show_history()
+        elif name == "enter" and self.mode == "history":
+            text = self.history.get(self.hist_index)
+            self.mode = "wait_release"
+            if text:
+                self.overlay.show("done", text, 1.2)
+                threading.Thread(target=self.paster.paste, args=(text,), daemon=True).start()
+            else:
+                self.overlay.hide()
+        elif name == "esc":
+            self.cancel_recording()
+            self.mode = "wait_release"
+            self.overlay.hide()
+
+    def show_history(self):
+        n = len(self.history)
+        if n == 0:
+            self.overlay.show("history", "아직 받아쓴 기록이 없어요")
+            return
+        text = self.history.get(self.hist_index)
+        self.overlay.show("history", f"{self.hist_index + 1}/{n}   {text}")
+
+    def stop_recording(self):
+        self.recording = False
+        audio = self.recorder.stop()
+        play(SOUND_STOP)
+        if time.time() - self.t0 &lt; MIN_SECONDS:
+            self.overlay.hide()
+            return
+        # 마이크가 하드웨어로 꺼져 있으면(헤드셋 음소거 버튼 등) Windows는 모르고 무음만 들어옴.
+        # 조용한 방도 보통 0.003 이상이 나오므로, 이보다 훨씬 작으면 마이크가 꺼진 것으로 봄.
+        peak = float(np.abs(audio).max()) if len(audio) else 0.0
+        if peak &lt; 0.0005:
+            log(f"마이크에 소리가 안 들어옴 (최대 {peak:.6f})")
+            self.overlay.show("idle", "마이크에 소리가 안 들어와요. 헤드셋 음소거 버튼을 확인해 주세요.", 4)
+            return
+        self.overlay.show("processing", self.overlay.text)
+        self.finals.put(audio)
+
+    # 말하는 동안 계속 받아써서 화면에 보여줌 (빠른 모드)
+    def partial_worker(self):
+        language = None
+        while self.recording:
+            audio = self.recorder.snapshot()
+            if len(audio) &lt; SAMPLE_RATE * 1.0:
+                time.sleep(0.1)
+                continue
+            try:
+                if language is None and len(audio) &gt;= SAMPLE_RATE * 1.5:
+                    language = self.transcriber.detect(audio)
+                text = self.transcriber.transcribe(audio[-SAMPLE_RATE * 25:],
+                                                   language or LANGUAGES[0], final=False)
+                if self.recording:
+                    self.events.put(("partial", text))
+            except Exception as e:
+                log(f"미리보기 오류: {e}")
+                time.sleep(0.5)
+
+    # 키를 떼면 정확한 모드로 다시 받아써서 붙여넣음
+    def final_worker(self):
+        while True:
+            audio = self.finals.get()
+            try:
+                started = time.time()
+                language = self.transcriber.detect(audio)
+                text = self.transcriber.transcribe(audio, language, final=True)
+                if text:
+                    self.history.add(text)   # 붙여넣을 곳이 없어도 기록에는 남김
+                    self.paster.paste(text)
+                    log(f"[{language}, {time.time() - started:.1f}초] {text}")
+                    if self.mode == "idle":
+                        self.events.put(("show", "done", text, 1.2))
+                else:
+                    log("(인식된 말이 없습니다)")
+                    if self.mode == "idle":
+                        self.events.put(("hide",))
+            except Exception as e:
+                log(f"오류: {e}")
+                if self.mode == "idle":
+                    self.events.put(("hide",))
+
+    def quit(self, *_):
+        log("트레이 메뉴에서 종료를 눌렀습니다")
+        self.tray.stop()
+        keyboard.unhook_all()
+        self.events.put(("quit",))
+
+    def run(self):
+        self.root.mainloop()
+        log("앱 종료")
+        os._exit(0)
+
+
+if __name__ == "__main__":
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)   # 고해상도 화면에서 글자 선명하게
+    except Exception:
+        pass
+    App().run()
+```
+
+### make_icon.py
+
+```python
+"""WhisperFlow 아이콘(icon.ico, icon.png)을 만든다."""
+import os
+from PIL import Image, ImageDraw, ImageFilter
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+N = 1024  # 크게 그린 뒤 줄여서 가장자리를 매끄럽게
+
+
+def lerp(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def make():
+    # 대각선 그라데이션 배경: 코랄 → 핑크 → 보라
+    top, mid, bot = (255, 122, 89), (240, 84, 140), (124, 77, 255)
+    grad = Image.new("RGB", (N, N))
+    px = grad.load()
+    for y in range(N):
+        for x in range(N):
+            t = (x * 0.35 + y * 0.65) / N
+            px[x, y] = lerp(top, mid, t / 0.5) if t &lt; 0.5 else lerp(mid, bot, (t - 0.5) / 0.5)
+
+    # 둥근 사각형 모양으로 자르기
+    pad = int(N * 0.04)
+    mask = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((pad, pad, N - pad, N - pad), radius=int(N * 0.23), fill=255)
+    icon = Image.new("RGBA", (N, N), (0, 0, 0, 0))
+    icon.paste(grad, (0, 0), mask)
+
+    # 위쪽에 은은한 광택
+    gloss = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(gloss).ellipse((-N * 0.3, -N * 0.75, N * 1.3, N * 0.45), fill=34)
+    gloss = gloss.filter(ImageFilter.GaussianBlur(N * 0.06))
+    gloss = Image.composite(gloss, Image.new("L", (N, N), 0), mask)
+    icon = Image.composite(Image.new("RGBA", (N, N), (255, 255, 255, 255)), icon, gloss)
+    icon.putalpha(mask)
+
+    # 흰색 음성 파형 막대 + 부드러운 그림자
+    bars = [0.26, 0.46, 0.66, 0.46, 0.26]
+    bw, gap = int(N * 0.085), int(N * 0.06)
+    total = len(bars) * bw + (len(bars) - 1) * gap
+    x0, cy = (N - total) // 2, N // 2
+    shapes = Image.new("L", (N, N), 0)
+    d = ImageDraw.Draw(shapes)
+    for i, h in enumerate(bars):
+        x = x0 + i * (bw + gap)
+        hh = int(N * h / 2)
+        d.rounded_rectangle((x, cy - hh, x + bw, cy + hh), radius=bw // 2, fill=255)
+
+    shadow = shapes.filter(ImageFilter.GaussianBlur(N * 0.02)).point(lambda v: v * 0.28)
+    shadow = Image.composite(shadow, Image.new("L", (N, N), 0), mask)
+    shadow_layer = Image.new("RGBA", (N, N), (40, 10, 60, 255))
+    shadow_layer.putalpha(shadow)
+    icon.alpha_composite(shadow_layer, (0, int(N * 0.015)))
+    white = Image.new("RGBA", (N, N), (255, 255, 255, 255))
+    white.putalpha(shapes)
+    icon.alpha_composite(white)
+
+    big = icon.resize((256, 256), Image.LANCZOS)
+    big.save(os.path.join(APP_DIR, "icon.png"))
+    big.save(os.path.join(APP_DIR, "icon.ico"),
+             sizes=[(16, 16), (20, 20), (24, 24), (32, 32), (40, 40), (48, 48), (64, 64), (128, 128), (256, 256)])
+
+
+if __name__ == "__main__":
+    make()
+```
+</pre>
+      </details>
+    </div>
+  </section>
+
+  <section id="use">
+    <h2>사용법</h2>
+    <p class="sub">녹음 키는 기본으로 숫자 1 왼쪽의 <kbd>`</kbd>(백틱)이에요. 설치할 때 다른 키로 바꿀 수 있어요.</p>
+    <div class="keys">
+      <div class="card"><div><kbd>`</kbd> 누른 채 말하기</div><p>말하는 동안 화면 아래에 글이 보이고, 키를 떼면 커서 자리에 입력돼요.</p></div>
+      <div class="card"><div><kbd>`</kbd> + <kbd>↑</kbd> <kbd>↓</kbd></div><p>이전에 받아쓴 글을 하나씩 찾아봐요. 터미널에서 명령 기록을 찾는 것과 같아요.</p></div>
+      <div class="card"><div><kbd>`</kbd> + <kbd>Enter</kbd></div><p>고른 글을 커서 자리에 입력해요.</p></div>
+      <div class="card"><div><kbd>`</kbd> 떼기 · <kbd>Esc</kbd></div><p>고르던 걸 취소해요. 아무것도 입력되지 않아요.</p></div>
+      <div class="card"><div>트레이 아이콘 우클릭</div><p>앱을 꺼요. 맥은 화면 위쪽 메뉴 막대에 있어요.</p></div>
+    </div>
+  </section>
+
+  <section id="trouble">
+    <h2>문제 해결</h2>
+    <p class="sub">실제로 겪었던 것들이에요. 안내문에 해결법이 들어 있지만, 혹시 생기면 이렇게 해 보세요.</p>
+    <div class="tips">
+      <details><summary><kbd>`</kbd>가 글자로 입력돼요</summary><p>앱이 꺼져 있다는 뜻이에요. 바탕화면(맥은 응용 프로그램)의 WhisperFlow를 다시 실행하세요. 계속 꺼지면 Claude에게 "앱이 저절로 꺼져"라고 말하고 로그를 봐 달라고 하세요.</p></details>
+      <details><summary>"마이크에 소리가 안 들어와요"라고 떠요</summary><p>헤드셋의 마이크 음소거 버튼이 켜져 있을 가능성이 커요. 게임이나 통화 중에 눌러 두고 잊는 경우가 많아요. Windows는 소리 설정 → 입력 → 마이크 테스트에서, 맥은 시스템 설정 → 사운드 → 입력에서 막대가 움직이는지 확인해 보세요.</p></details>
+      <details><summary>컴퓨터를 켠 직후에 안 돼요</summary><p>USB 헤드셋이 늦게 인식되면 생길 수 있어요. 안내문대로 만들면 앱이 마이크를 다시 찾아요. 그래도 안 되면 헤드셋을 뽑았다가 다시 꽂아 보세요.</p></details>
+      <details><summary>말하지 않은 글이 입력돼요</summary><p>Whisper가 숨소리나 웅얼거림을 글로 바꾸는 현상이에요. 안내문에 막는 방법이 들어 있어요. 그래도 생기면 무엇이 입력됐는지 Claude에게 그대로 보여 주세요.</p></details>
+      <details><summary>다른 곳을 클릭해서 받아쓴 글이 날아갔어요</summary><p>입력하고 싶은 곳을 클릭한 뒤, <kbd>`</kbd>를 누른 채 <kbd>↑</kbd>로 그 글을 찾아서 <kbd>Enter</kbd>를 누르면 돼요.</p></details>
+    </div>
+  </section>
+
+  <section id="know">
+    <h2>알아 둘 점</h2>
+    <div class="grid">
+      <div class="card"><div class="icon">🧠</div><h3>들은 그대로 적어요</h3><p>"음, 어"를 빼거나 문장을 다듬지는 않아요. 필요하면 Claude에게 기능을 더해 달라고 하세요.</p></div>
+      <div class="card"><div class="icon">🔤</div><h3>섞어 말하면 한쪽으로</h3><p>한 번에 말한 내용 안에서 한국어와 영어를 섞으면 더 많이 쓴 언어 기준으로 적혀요.</p></div>
+      <div class="card"><div class="icon">🖥️</div><h3>컴퓨터마다 따로</h3><p>만든 컴퓨터에서만 돌아가요. 다른 컴퓨터에서도 쓰려면 거기서 한 번 더 만들어요.</p></div>
+      <div class="card warn"><div class="icon">⌨️</div><h3><kbd>`</kbd> 키는 앱이 가져가요</h3><p>앱이 켜져 있는 동안 <kbd>`</kbd>와 <kbd>~</kbd>는 입력되지 않아요. 자주 쓰면 설치할 때 다른 키로 정하세요.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    직접 쓰려고 Claude와 함께 만든 앱이에요. 고치고 싶은 점이 생기면 Claude에게 그대로 말하면 돼요. 🎙️
+  </footer>
+</div>
+
+<script>
+  // 데모 창: 한국어와 영어 문장이 번갈아 받아써지는 모습
+  (() => {
+    const el = document.getElementById("demo-text");
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const lines = [
+      "내일 오후 3시에 회의실에서 만나요.",
+      "Can you send me the report before the meeting?",
+      "이번 주말에 같이 산책 갈래?",
+      "Sounds good, thanks!",
+    ];
+    let i = 0;
+    const type = (text, n = 0) => {
+      el.textContent = text.slice(0, n);
+      if (n < text.length) return setTimeout(() => type(text, n + 1), 55);
+      setTimeout(() => { i = (i + 1) % lines.length; type(lines[i]); }, 1800);
+    };
+    setTimeout(() => type(lines[(i = 1)]), 2200);
+  })();
+
+  // 안내문 복사 (위·아래 버튼 모두)
+  const pre = document.getElementById("prompt");
+  document.querySelectorAll("[data-copy]").forEach((btn) => {
+    const status = btn.closest("header, .copy-card").querySelector("[data-status]");
+    const label = btn.textContent;
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(pre.textContent);
+        btn.textContent = "✅ 복사됐어요";
+        btn.classList.add("done");
+        status.textContent = "이제 Claude 앱의 Code 탭에 붙여넣으세요 (Ctrl+V, 맥은 ⌘V).";
+        setTimeout(() => { btn.textContent = label; btn.classList.remove("done"); }, 2500);
+      } catch (e) {
+        const details = pre.closest("details");
+        details.open = true;
+        details.scrollIntoView({ block: "center" });
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        status.textContent = "자동 복사가 막혀 있어요. 안내문 전체를 선택해 두었으니 Ctrl+C(맥은 ⌘C)를 눌러 복사하세요.";
+      }
+    });
+  });
+</script>
+</body>
+</html>
