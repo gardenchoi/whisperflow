@@ -3,7 +3,7 @@
 키 하나 누르고 말하면, 커서 자리에 글이 써지는 무료 받아쓰기 앱이에요.
 음성 인식은 전부 내 컴퓨터 안에서 일어나고, 구독료도 없어요.
 
-👉 **따라 만들기 안내: https://gardenchoi.github.io/whisperflow/**
+👉 **따라 만들기 안내: https://jungwon.pages.dev/whisperflow/**
 
 안내 페이지의 안내문을 Claude 데스크톱 앱(Code 탭)에 붙여넣으면, Claude가 내 컴퓨터 사양에 맞게 설치하고 테스트까지 해 줘요.
 
